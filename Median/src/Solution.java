@@ -1,8 +1,8 @@
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
+import java.util.PriorityQueue;
 
 /**
 The median of M numbers is defined as the middle number after sorting them in order, if M is odd or the average number of the middle 2 numbers (again after sorting) if M is even. You have an empty number list at first. Then you can add or remove some number from the list. For each add or remove operation, output the median of numbers in the list.
@@ -100,39 +100,79 @@ public class Solution {
 
 	public static class Median {
 
-		ArrayList<Integer> list;
+		PriorityQueue<Integer> minHeap;
+		PriorityQueue<Integer> maxHeap;
 		double median;
 
 		public Median(int N) {
-			list = new ArrayList<Integer>(N);
+			minHeap = new PriorityQueue<Integer>(N/2);
+			maxHeap = new PriorityQueue<Integer>(N/2, new Comparator<Integer>() {
+
+				@Override
+				public int compare(Integer o1, Integer o2) {
+					return o2 - o1;
+				}
+			});
 		}
 		
-		public boolean isEmpty() {
-			return list.isEmpty();
-		}
-
 		public void add (Integer number){
 			
-			list.add(number);
-			Collections.sort(list);
-
+			if (number <= median){
+				maxHeap.add(number);
+			}
+			else {
+				minHeap.add(number);
+			}
+			balanceHeaps();
 		}
 		
+		private void balanceHeaps() {
+			
+			int difference = maxHeap.size() - minHeap.size();
+			
+			if (Math.abs(difference) <= 1)
+				return;
+			else if (difference < -1){
+				maxHeap.offer(minHeap.poll());
+			}
+			else if (difference > 1){
+				minHeap.offer(maxHeap.poll());
+			}
+			
+		}
+
 		public boolean remove (Integer number) {
+			boolean isRemoved;
+			if (number == median){
+				isRemoved = maxHeap.remove(number);
+				if (!isRemoved)
+					isRemoved = minHeap.remove(number);
+				else return true;
+			}
+			if (number < median){
+				isRemoved = maxHeap.remove(number);
+			}
+			else {
+				isRemoved = minHeap.remove(number);
+			}
+			if (isRemoved)
+				balanceHeaps();
 			
-			return list.remove(number);
-			
+			return isRemoved;
+		}
+		
+		public boolean isEmpty(){
+			return maxHeap.isEmpty() && minHeap.isEmpty();
 		}
 		
 		public double getMedian (){
 			
-			int size = list.size();
-			if (size % 2 == 0) {
-				median = (double)(list.get(size/2) + list.get(size/2 - 1)) / 2;
-			}
-			else {
-				median = list.get((size - 1) / 2);
-			}
+			if (maxHeap.size() == minHeap.size())
+				median = (double)(maxHeap.peek() + minHeap.peek()) / 2;
+			else if (maxHeap.size() < minHeap.size())
+				median = minHeap.peek();
+			else median = maxHeap.peek();
+			
 			return median;
 		}
 
